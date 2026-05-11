@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyName>ZeroTrustAuditor</AssemblyName>
+    <RootNamespace>ZeroTrustAuditor</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Version>2.0.0</Version>
+    <Description>Zero Trust misconfiguration assessment tool - pure C# edition</Description>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <!-- Explicit compile items - no accidental test file inclusion -->
+  <ItemGroup>
+    <Compile Include="src\Program.cs" />
+    <Compile Include="src\Models\Finding.cs" />
+    <Compile Include="src\Models\AuditConfig.cs" />
+    <Compile Include="src\Checks\AdAuditor.cs" />
+    <Compile Include="src\Checks\ProtocolProbe.cs" />
+    <Compile Include="src\Checks\LateralPathAnalyzer.cs" />
+    <Compile Include="src\Checks\ShareAuditor.cs" />
+    <Compile Include="src\Checks\SegmentationChecker.cs" />
+    <Compile Include="src\Checks\CheckBase.cs" />
+    <Compile Include="src\Reports\ReportRenderer.cs" />
+    <Compile Include="src\Reports\SiemRenderer.cs" />
+    <Compile Include="src\Orchestrator.cs" />
+  </ItemGroup>
+
+  <!-- Copy config next to exe -->
+  <ItemGroup>
+    <Content Include="audit-config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Required NuGet packages - not included automatically in .NET 8 on Windows -->
+  <ItemGroup>
+    <PackageReference Include="System.DirectoryServices"                   Version="8.0.0" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="8.0.0" />
+    <PackageReference Include="System.DirectoryServices.Protocols"         Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

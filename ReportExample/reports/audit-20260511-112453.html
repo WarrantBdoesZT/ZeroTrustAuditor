@@ -1,0 +1,320 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ZeroTrustAuditor Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:#f4f5f7;color:#1d2330;font-size:14px;line-height:1.6}
+header{background:#1d2330;color:#fff;padding:24px 32px}
+header h1{font-size:20px;font-weight:600}
+header p{opacity:.6;font-size:12px;margin-top:4px}
+.summary{display:flex;gap:12px;padding:20px 32px;flex-wrap:wrap}
+.card{background:#fff;border-radius:8px;padding:16px 20px;flex:1;min-width:120px;
+      box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
+.card .num{font-size:28px;font-weight:700}
+.card .lbl{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.c-crit{color:#dc2626}.c-high{color:#ea580c}.c-med{color:#d97706}
+.c-low{color:#16a34a}.c-info{color:#6b7280}
+.findings{padding:0 32px 48px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;
+      overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+th{background:#f9fafb;padding:9px 12px;text-align:left;font-size:11px;
+   text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e5e7eb}
+td{padding:9px 12px;border-bottom:1px solid #f3f4f6;vertical-align:top;font-size:12px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600}
+.bC{background:#fee2e2;color:#991b1b}
+.bH{background:#ffedd5;color:#9a3412}
+.bM{background:#fef3c7;color:#92400e}
+.bL{background:#dcfce7;color:#166534}
+.bI{background:#f3f4f6;color:#374151}
+.host{font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:3px}
+.ev{font-family:monospace;font-size:10px;background:#f9fafb;padding:4px 6px;border-radius:3px;
+    white-space:pre-wrap;word-break:break-all;max-height:60px;overflow-y:auto}
+footer{text-align:center;padding:16px;font-size:11px;color:#9ca3af}
+</style>
+</head>
+<body>
+<header>
+  <h1>ZeroTrustAuditor v2.0 -- Report</h1>  <p>Domain: inlanefreight.local &nbsp;|&nbsp; Generated: 2026-05-11 11:24 UTC &nbsp;|&nbsp; Hosts: 2 &nbsp;|&nbsp; Report ID: b6072778-8b80-438e-a0dd-3129bc951b69</p>
+</header>
+<div class="summary"><div class="card"><div class="num c-crit">6</div><div class="lbl">Critical</div></div>
+<div class="card"><div class="num c-high">9</div><div class="lbl">High</div></div>
+<div class="card"><div class="num c-med">13</div><div class="lbl">Medium</div></div>
+<div class="card"><div class="num c-low">1</div><div class="lbl">Low</div></div>
+<div class="card"><div class="num c-info">29</div><div class="lbl">Total</div></div>
+</div>
+<div class="findings">
+<table>
+<thead><tr>
+  <th>Severity</th><th>Score</th><th>Host</th><th>Check</th>
+  <th>Description</th><th>Evidence</th><th>Remediation</th>
+</tr></thead>
+<tbody><tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">inlanefreight.local</span></td>
+  <td>DCSYNC_ACE</td>
+  <td>Principal &#39;S-1-5-9&#39; has DCSync-capable replication rights on the domain root. This enables offline extraction of all password hashes without touching a DC.</td>
+  <td><div class="ev">Principal=S-1-5-9; RightGUID=1131f6aa-9c07-11d1-f79f-00c04fc2dcd2; AccessType=Allow</div></td>
+  <td>Remove DS-Replication-Get-Changes-All ACEs from all non-DC principals. Use repadmin /showattr to enumerate delegated replication rights.</td>
+</tr>
+<tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>SMB_SIGNING_DISABLED</td>
+  <td>SMB signing is not required on &#39;SRV01&#39;. SMB relay attacks (NTLM relay) are possible, enabling code execution without credentials.</td>
+  <td><div class="ev">RequireSecuritySignature=0; EnableSecuritySignature=0</div></td>
+  <td>Set RequireSecuritySignature=1 via GPO: Computer Configuration -&gt; Windows Settings -&gt; Security Settings -&gt; Local Policies -&gt; Security Options -&gt; Microsoft network server: Digitally sign communications (always).</td>
+</tr>
+<tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>SMB_SIGNING_DISABLED</td>
+  <td>SMB signing is not required on &#39;SRV02&#39;. SMB relay attacks (NTLM relay) are possible, enabling code execution without credentials.</td>
+  <td><div class="ev">RequireSecuritySignature=0; EnableSecuritySignature=0</div></td>
+  <td>Set RequireSecuritySignature=1 via GPO: Computer Configuration -&gt; Windows Settings -&gt; Security Settings -&gt; Local Policies -&gt; Security Options -&gt; Microsoft network server: Digitally sign communications (always).</td>
+</tr>
+<tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>ADMIN_SHARE_OVERPERMISSIVE</td>
+  <td>Administrative share ADMIN$ on &#39;SRV01&#39; grants write access to &#39;BUILTIN\Users&#39;. Admin shares should be restricted to Administrators and SYSTEM only.</td>
+  <td><div class="ev">Share=ADMIN$; Principal=BUILTIN\Users; Rights=ReadAndExecute, Synchronize</div></td>
+  <td>Restrict ADMIN$ access to Administrators and SYSTEM only. If admin shares are not required, disable via registry: AutoShareServer=0 or AutoShareWks=0.</td>
+</tr>
+<tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>ADMIN_SHARE_OVERPERMISSIVE</td>
+  <td>Administrative share ADMIN$ on &#39;SRV02&#39; grants write access to &#39;BUILTIN\Users&#39;. Admin shares should be restricted to Administrators and SYSTEM only.</td>
+  <td><div class="ev">Share=ADMIN$; Principal=BUILTIN\Users; Rights=ReadAndExecute, Synchronize</div></td>
+  <td>Restrict ADMIN$ access to Administrators and SYSTEM only. If admin shares are not required, disable via registry: AutoShareServer=0 or AutoShareWks=0.</td>
+</tr>
+<tr>
+  <td><span class="badge bC">Critical</span></td>
+  <td><strong>9.0</strong></td>
+  <td><span class="host">inlanefreight.local</span></td>
+  <td>SYSVOL_WRITE_PERMISSION</td>
+  <td>SYSVOL grants write access to &#39;NT AUTHORITY\Authenticated Users&#39;. Writable SYSVOL allows planting of malicious scripts or GPO template files that execute on all domain-joined machines during policy refresh.</td>
+  <td><div class="ev">Path=\\inlanefreight.local\SYSVOL; Principal=NT AUTHORITY\Authenticated Users; Rights=ReadAndExecute, Synchronize</div></td>
+  <td>SYSVOL should only be writable by Domain Admins, SYSTEM, and CREATOR OWNER. Remove any broader write permissions immediately. Enable FRS/DFSR monitoring for unauthorized changes.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">inlanefreight.local</span></td>
+  <td>KERBEROASTABLE_SPN</td>
+  <td>Account &#39;DC01$&#39; has SPNs and is susceptible to Kerberoasting.</td>
+  <td><div class="ev">SamAccountName=DC01$; SPNs=Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/DC01.inlanefreight.local; ldap/DC01.inlanefreight.local/ForestDnsZones.inlanefreight.local; ldap/DC01.inlanefreight.local/DomainDnsZones.inlanefreight.local; TERMSRV/DC01; TERMSRV/DC01.inlanefreight.local; DNS/DC01.inlanefreight.local; GC/DC01.inlanefreight.local/inlanefreight.local; RestrictedKrbHost/DC01.inlanefreight.local; RestrictedKrbHost/DC01; RPC/e6169757-7de0-4e6e-a69b-e75a70ab6b3a._msdcs.inlanefreight.local; HOST/DC01/INLANEFREIGHT; HOST/DC01.inlanefreight.local/INLANEFREIGHT; HOST/DC01; HOST/DC01.inlanefreight.local; HOST/DC01.inlanefreight.local/inlanefreight.local; E3514235-4B06-11D1-AB04-00C04FC2DCD2/e6169757-7de0-4e6e-a69b-e75a70ab6b3a/inlanefreight.local; ldap/DC01/INLANEFREIGHT; ldap/e6169757-7de0-4e6e-a69b-e75a70ab6b3a._msdcs.inlanefreight.local; ldap/DC01.inlanefreight.local/INLANEFREIGHT; ldap/DC01; ldap/DC01.inlanefreight.local; ldap/DC01.inlanefreight.local/inlanefreight.local; AdminCount=0</div></td>
+  <td>Use Group Managed Service Accounts (gMSA). If a standard account is required, use a 127+ character random password and audit SPN registrations.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>RDP_NLA_DISABLED</td>
+  <td>RDP Network Level Authentication is disabled on &#39;SRV01&#39;. The login screen is exposed before authentication, enabling bruteforce attacks.</td>
+  <td><div class="ev">HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp\UserAuthentication=0</div></td>
+  <td>Set UserAuthentication=1 via GPO: Computer Configuration -&gt; Administrative Templates -&gt; Windows Components -&gt; Remote Desktop Services -&gt; Require NLA.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>RDP_NLA_DISABLED</td>
+  <td>RDP Network Level Authentication is disabled on &#39;SRV02&#39;. The login screen is exposed before authentication, enabling bruteforce attacks.</td>
+  <td><div class="ev">HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp\UserAuthentication=0</div></td>
+  <td>Set UserAuthentication=1 via GPO: Computer Configuration -&gt; Administrative Templates -&gt; Windows Components -&gt; Remote Desktop Services -&gt; Require NLA.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>DOMAIN_GROUP_LOCAL_ADMIN</td>
+  <td>Domain group &#39;PDQ Deploy Admin&#39; is in the local Administrators group on &#39;SRV01&#39;. All members of this group inherit local admin rights.</td>
+  <td><div class="ev">LocalGroup=Administrators; Member=PDQ Deploy Admin; Type=Group</div></td>
+  <td>Remove broad domain groups from local Administrators. Use LAPS for local admin password management. Use PAW model with dedicated per-tier admin accounts.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>LAPS_NOT_DEPLOYED</td>
+  <td>LAPS (Local Administrator Password Solution) does not appear to be deployed on &#39;SRV01&#39;. Without LAPS, all hosts built from the same image share the same local admin password. One compromised host yields local admin on all peers.</td>
+  <td><div class="ev">LAPS registry key absent on SRV01</div></td>
+  <td>Deploy Microsoft LAPS or Windows LAPS (built-in on Windows Server 2019+ and Windows 11). Configure 30-day maximum password age. Restrict ms-Mcs-AdmPwd read access to delegated admin groups only.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>DOMAIN_GROUP_LOCAL_ADMIN</td>
+  <td>Domain group &#39;PDQ Deploy Admin&#39; is in the local Administrators group on &#39;SRV02&#39;. All members of this group inherit local admin rights.</td>
+  <td><div class="ev">LocalGroup=Administrators; Member=PDQ Deploy Admin; Type=Group</div></td>
+  <td>Remove broad domain groups from local Administrators. Use LAPS for local admin password management. Use PAW model with dedicated per-tier admin accounts.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>LAPS_NOT_DEPLOYED</td>
+  <td>LAPS (Local Administrator Password Solution) does not appear to be deployed on &#39;SRV02&#39;. Without LAPS, all hosts built from the same image share the same local admin password. One compromised host yields local admin on all peers.</td>
+  <td><div class="ev">LAPS registry key absent on SRV02</div></td>
+  <td>Deploy Microsoft LAPS or Windows LAPS (built-in on Windows Server 2019+ and Windows 11). Configure 30-day maximum password age. Restrict ms-Mcs-AdmPwd read access to delegated admin groups only.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>WINDOWS_FIREWALL_DISABLED</td>
+  <td>Windows Firewall &#39;Domain&#39; profile is DISABLED on &#39;SRV01&#39;. Host-based firewall is a critical defense-in-depth layer.</td>
+  <td><div class="ev">Profile=Domain; EnableFirewall=0; Key=HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\DomainProfile\EnableFirewall</div></td>
+  <td>Re-enable Windows Firewall for all profiles via GPO. Never disable host firewall -- use explicit inbound rules instead.</td>
+</tr>
+<tr>
+  <td><span class="badge bH">High</span></td>
+  <td><strong>7.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>WINDOWS_FIREWALL_DISABLED</td>
+  <td>Windows Firewall &#39;Domain&#39; profile is DISABLED on &#39;SRV02&#39;. Host-based firewall is a critical defense-in-depth layer.</td>
+  <td><div class="ev">Profile=Domain; EnableFirewall=0; Key=HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\DomainProfile\EnableFirewall</div></td>
+  <td>Re-enable Windows Firewall for all profiles via GPO. Never disable host firewall -- use explicit inbound rules instead.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">inlanefreight.local</span></td>
+  <td>MISSING_PROTECTED_USERS</td>
+  <td>Privileged account &#39;Administrator&#39; (member of &#39;Domain Admins&#39;) is not in Protected Users. TGT lifetime is unrestricted and NTLM/Digest auth is not blocked.</td>
+  <td><div class="ev">SamAccountName=Administrator; Group=Domain Admins; Enabled=True</div></td>
+  <td>Add all tier-0 and tier-1 privileged accounts to Protected Users. Test compatibility -- Protected Users blocks NTLM, DES, RC4, and unconstrained delegation.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>WINRM_NO_HTTPS</td>
+  <td>WinRM HTTPS (port 5986) is not listening on &#39;SRV01&#39;. If WinRM is in use, traffic relies on Kerberos message encryption only.</td>
+  <td><div class="ev">Port 5985 open=True; Port 5986 open=False</div></td>
+  <td>Configure a WinRM HTTPS listener with a machine certificate. Disable the HTTP listener where not required.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>RDP_WEAK_ENCRYPTION</td>
+  <td>RDP minimum encryption level is 2 on &#39;SRV01&#39;. Values below 3 use weak RC4.</td>
+  <td><div class="ev">MinEncryptionLevel=2 (safe minimum: 3)</div></td>
+  <td>Set MinEncryptionLevel=3 or use SecurityLayer=2 (TLS) via GPO: RDS -&gt; Session Host -&gt; Security -&gt; Set client connection encryption level.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>DCOM_DEFAULT_ACCESS_PERMISSION</td>
+  <td>DCOM DefaultAccessPermission is absent on &#39;SRV01&#39;. The default grants Everyone call access to all COM servers.</td>
+  <td><div class="ev">HKLM\SOFTWARE\Microsoft\Ole\DefaultAccessPermission: key absent</div></td>
+  <td>Set explicit DefaultAccessPermission restricting to local Administrators via dcomcnfg or SCM hardening.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>WINRM_NO_HTTPS</td>
+  <td>WinRM HTTPS (port 5986) is not listening on &#39;SRV02&#39;. If WinRM is in use, traffic relies on Kerberos message encryption only.</td>
+  <td><div class="ev">Port 5985 open=True; Port 5986 open=False</div></td>
+  <td>Configure a WinRM HTTPS listener with a machine certificate. Disable the HTTP listener where not required.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>RDP_WEAK_ENCRYPTION</td>
+  <td>RDP minimum encryption level is 2 on &#39;SRV02&#39;. Values below 3 use weak RC4.</td>
+  <td><div class="ev">MinEncryptionLevel=2 (safe minimum: 3)</div></td>
+  <td>Set MinEncryptionLevel=3 or use SecurityLayer=2 (TLS) via GPO: RDS -&gt; Session Host -&gt; Security -&gt; Set client connection encryption level.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>BROAD_RDP_ACCESS</td>
+  <td>The Remote Desktop Users group on &#39;SRV01&#39; contains 2 domain account(s)/group(s). In a Zero Trust model, RDP access should be limited to specific admin accounts via JIT.</td>
+  <td><div class="ev">RemoteDesktopUsers members: Helen; Crismerlin</div></td>
+  <td>Remove broad domain groups from Remote Desktop Users. Implement JIT RDP access via PIM or a PAM solution. Route all RDP through a jump server -- no direct RDP from user workstations.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>BROAD_RDP_ACCESS</td>
+  <td>The Remote Desktop Users group on &#39;SRV02&#39; contains 1 domain account(s)/group(s). In a Zero Trust model, RDP access should be limited to specific admin accounts via JIT.</td>
+  <td><div class="ev">RemoteDesktopUsers members: Remote Desktop Group</div></td>
+  <td>Remove broad domain groups from Remote Desktop Users. Implement JIT RDP access via PIM or a PAM solution. Route all RDP through a jump server -- no direct RDP from user workstations.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">inlanefreight.local</span></td>
+  <td>LOCAL_ADMIN_OVERLAP</td>
+  <td>Account &#39;Domain Admins&#39; has local Administrator rights on 2 hosts. Compromise of this single account enables lateral movement to all of them.</td>
+  <td><div class="ev">Account=Domain Admins; Hosts=SRV01, SRV02</div></td>
+  <td>Implement LAPS to ensure unique local admin passwords per host. Remove shared admin accounts. Use tiered administration: accounts used on tier-1 servers must not have local admin on tier-2 workstations.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>FIREWALL_LOGGING_DISABLED</td>
+  <td>Windows Firewall &#39;Domain&#39; profile on &#39;SRV01&#39; does not log dropped packets. Lateral movement attempts and port scans are invisible to the SOC.</td>
+  <td><div class="ev">Profile=Domain; LogDroppedPackets=0</div></td>
+  <td>Enable firewall drop logging via GPO or Set-NetFirewallProfile. Forward logs to SIEM via Windows Event Forwarding. Set log file size to at least 32768 KB.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV01</span></td>
+  <td>WEF_NOT_CONFIGURED</td>
+  <td>Windows Event Forwarding (WEF) is not configured on &#39;SRV01&#39;. Without centralised log collection, attackers can clear local logs and destroy forensic evidence.</td>
+  <td><div class="ev">HKLM\SOFTWARE\Policies\Microsoft\Windows\EventLog\EventForwarding\SubscriptionManager: absent</div></td>
+  <td>Deploy WEF via GPO: configure a Windows Event Collector and push subscription config to all endpoints. Forward Security, System, and Sysmon events to your SIEM. Alternatively deploy a SIEM agent (Splunk UF, Elastic Agent, Sentinel MMA).</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>FIREWALL_LOGGING_DISABLED</td>
+  <td>Windows Firewall &#39;Domain&#39; profile on &#39;SRV02&#39; does not log dropped packets. Lateral movement attempts and port scans are invisible to the SOC.</td>
+  <td><div class="ev">Profile=Domain; LogDroppedPackets=0</div></td>
+  <td>Enable firewall drop logging via GPO or Set-NetFirewallProfile. Forward logs to SIEM via Windows Event Forwarding. Set log file size to at least 32768 KB.</td>
+</tr>
+<tr>
+  <td><span class="badge bM">Medium</span></td>
+  <td><strong>5.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>WEF_NOT_CONFIGURED</td>
+  <td>Windows Event Forwarding (WEF) is not configured on &#39;SRV02&#39;. Without centralised log collection, attackers can clear local logs and destroy forensic evidence.</td>
+  <td><div class="ev">HKLM\SOFTWARE\Policies\Microsoft\Windows\EventLog\EventForwarding\SubscriptionManager: absent</div></td>
+  <td>Deploy WEF via GPO: configure a Windows Event Collector and push subscription config to all endpoints. Forward Security, System, and Sysmon events to your SIEM. Alternatively deploy a SIEM agent (Splunk UF, Elastic Agent, Sentinel MMA).</td>
+</tr>
+<tr>
+  <td><span class="badge bL">Low</span></td>
+  <td><strong>3.0</strong></td>
+  <td><span class="host">SRV02</span></td>
+  <td>SECURITY_LOG_TOO_SMALL</td>
+  <td>Security event log on &#39;SRV02&#39; is only 20MB. A small log rotates quickly, potentially losing evidence of brute-force or pass-the-hash activity.</td>
+  <td><div class="ev">SecurityLogMaxSize=20MB (recommended minimum: 1024MB for servers)</div></td>
+  <td>Set Security log maximum size to at least 1 GB via GPO: Computer Configuration -&gt; Windows Settings -&gt; Security Settings -&gt; Event Log -&gt; Maximum security log size. Set log full behavior to archive rather than overwrite.</td>
+</tr>
+</tbody></table>
+</div>
+<footer>ZeroTrustAuditor v2.0 -- read-only, non-destructive assessment</footer>
+</body></html>
