@@ -15,6 +15,10 @@ namespace ZeroTrustAuditor
     ///   ZeroTrustAuditor.exe --hosts host1,host2 --domain corp.local
     ///   ZeroTrustAuditor.exe --hosts-file targets.txt --domain corp.local
     ///   ZeroTrustAuditor.exe --hosts host1 --domain corp.local --config audit-config.json
+    ///   ZeroTrustAuditor.exe --hosts host1 --domain corp.local --skip-modules AdAuditor,ShareAuditor
+    ///
+    /// --skip-modules accepts a comma-separated list of module names to skip:
+    ///   AdAuditor, ProtocolProbe, LateralPathAnalyzer, ShareAuditor, SegmentationChecker
     ///
     /// No PowerShell. No external processes. No WMI/CIM.
     /// Pure .NET 8 with System.DirectoryServices, Registry, and TCP.
@@ -30,7 +34,17 @@ namespace ZeroTrustAuditor
 
             Directory.CreateDirectory(opts.OutputDir);
 
+            // Apply CLI skip-modules on top of whatever is in config
             var config = AuditConfigLoader.Load(opts.ConfigPath);
+            if (opts.SkipModules.Length > 0)
+            {
+                foreach (var m in opts.SkipModules)
+                    if (!config.Audit.SkipModules.Contains(m, StringComparer.OrdinalIgnoreCase))
+                        config.Audit.SkipModules.Add(m);
+
+                Console.WriteLine($"[*] Skipping modules (--skip-modules): {string.Join(", ", opts.SkipModules)}");
+            }
+
             var orchestrator = new Orchestrator(config);
             var renderer     = new ReportRenderer();
             var siem         = new SiemRenderer(config);
@@ -91,48 +105,79 @@ namespace ZeroTrustAuditor
             string[]  Hosts,
             string    Domain,
             string    OutputDir,
-            string?   ConfigPath);
+            string?   ConfigPath,
+            string[]  SkipModules);
 
         static Options? ParseArgs(string[] args)
         {
-            string? hostsArg    = null;
-            string? hostsFile   = null;
-            string? domain      = null;
-            string  outputDir   = "./reports";
-            string? configPath  = null;
+            string? hostsArg     = null;
+            string? hostsFile    = null;
+            string? domain       = null;
+            string  outputDir    = "./reports";
+            string? configPath   = null;
+            string? skipModules  = null;
 
-            for (int i = 0; i < args.Length - 1; i++)
+            // Fix: use args.Length (not args.Length - 1) so the last flag is never skipped.
+            // Each value flag consumes args[i] (the flag) and args[++i] (the value),
+            // so the bounds check inside the switch handles the edge case safely.
+            for (int i = 0; i < args.Length; i++)
+            {
                 switch (args[i].ToLowerInvariant())
                 {
-                    case "--hosts":      hostsArg   = args[++i]; break;
-                    case "--hosts-file": hostsFile  = args[++i]; break;
-                    case "--domain":     domain     = args[++i]; break;
-                    case "--output":     outputDir  = args[++i]; break;
-                    case "--config":     configPath = args[++i]; break;
+                    case "--hosts":
+                        if (i + 1 < args.Length) hostsArg    = args[++i]; break;
+                    case "--hosts-file":
+                        if (i + 1 < args.Length) hostsFile   = args[++i]; break;
+                    case "--domain":
+                        if (i + 1 < args.Length) domain      = args[++i]; break;
+                    case "--output":
+                        if (i + 1 < args.Length) outputDir   = args[++i]; break;
+                    case "--config":
+                        if (i + 1 < args.Length) configPath  = args[++i]; break;
+                    case "--skip-modules":
+                        if (i + 1 < args.Length) skipModules = args[++i]; break;
                 }
+            }
 
             if (domain == null)
             {
                 Console.Error.WriteLine(
-                    "Usage: ZeroTrustAuditor.exe " +
-                    "(--hosts h1,h2 | --hosts-file file.txt) " +
-                    "--domain corp.local [--output ./reports] [--config audit-config.json]");
+                    "\nUsage:\n" +
+                    "  ZeroTrustAuditor.exe --hosts h1,h2 --domain corp.local\n" +
+                    "  ZeroTrustAuditor.exe --hosts-file targets.txt --domain corp.local\n" +
+                    "\nOptional flags:\n" +
+                    "  --output   ./reports          Output directory (default: ./reports)\n" +
+                    "  --config   audit-config.json  Config file path\n" +
+                    "  --skip-modules AdAuditor,ShareAuditor\n" +
+                    "             Comma-separated list of modules to skip.\n" +
+                    "             Valid names: AdAuditor, ProtocolProbe,\n" +
+                    "             LateralPathAnalyzer, ShareAuditor, SegmentationChecker");
                 return null;
             }
 
+            // Resolve host list
             string[] hosts;
 
             if (hostsFile != null)
             {
-                if (!File.Exists(hostsFile))
+                // Resolve relative paths from the current working directory
+                var resolvedPath = Path.IsPathRooted(hostsFile)
+                    ? hostsFile
+                    : Path.Combine(Directory.GetCurrentDirectory(), hostsFile);
+
+                if (!File.Exists(resolvedPath))
                 {
-                    Console.Error.WriteLine($"[!] Hosts file not found: {hostsFile}");
+                    Console.Error.WriteLine($"[!] Hosts file not found: {resolvedPath}");
+                    Console.Error.WriteLine($"    Current directory: {Directory.GetCurrentDirectory()}");
                     return null;
                 }
-                hosts = File.ReadAllLines(hostsFile)
+
+                hosts = File.ReadAllLines(resolvedPath)
                     .Select(l => l.Trim())
-                    .Where(l => l.Length > 0 && !l.StartsWith('#'))
+                    .Where(l => l.Length > 0 && !l.StartsWith('#') && !l.StartsWith("//"))
                     .ToArray();
+
+                Console.WriteLine($"[*] Hosts file: {resolvedPath}");
             }
             else if (hostsArg != null)
             {
@@ -148,12 +193,22 @@ namespace ZeroTrustAuditor
 
             if (hosts.Length == 0)
             {
-                Console.Error.WriteLine("[!] No hosts resolved from input.");
+                Console.Error.WriteLine("[!] No hosts resolved from input. Check the file is not empty and has no BOM.");
                 return null;
             }
 
             Console.WriteLine($"[*] Hosts in scope: {hosts.Length}");
-            return new Options(hosts, domain, outputDir, configPath);
+            foreach (var h in hosts)
+                Console.WriteLine($"    {h}");
+
+            // Parse skip-modules list
+            var skipList = skipModules == null
+                ? Array.Empty<string>()
+                : skipModules.Split(',',
+                    StringSplitOptions.RemoveEmptyEntries |
+                    StringSplitOptions.TrimEntries);
+
+            return new Options(hosts, domain, outputDir, configPath, skipList);
         }
 
         static void PrintBanner()
