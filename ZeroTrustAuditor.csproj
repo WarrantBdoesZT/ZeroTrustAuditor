@@ -18,6 +18,7 @@
     <Compile Include="src\Program.cs" />
     <Compile Include="src\Models\Finding.cs" />
     <Compile Include="src\Models\AuditConfig.cs" />
+    <Compile Include="src\Models\GraphModel.cs" />
     <Compile Include="src\Checks\AdAuditor.cs" />
     <Compile Include="src\Checks\ProtocolProbe.cs" />
     <Compile Include="src\Checks\LateralPathAnalyzer.cs" />
@@ -26,6 +27,8 @@
     <Compile Include="src\Checks\CheckBase.cs" />
     <Compile Include="src\Reports\ReportRenderer.cs" />
     <Compile Include="src\Reports\SiemRenderer.cs" />
+    <Compile Include="src\Reports\GraphRenderer.cs" />
+    <Compile Include="src\PathGraphBuilder.cs" />
     <Compile Include="src\Orchestrator.cs" />
   </ItemGroup>
 
