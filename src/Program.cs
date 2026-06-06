@@ -83,6 +83,34 @@ namespace ZeroTrustAuditor
                     siem.WriteCef(report,
                         Path.Combine(opts.OutputDir, $"audit-{stamp}.cef"));
 
+                // ── Lateral movement graph ────────────────────────────────────
+                // Build a graph from the findings and compute attack paths to
+                // high-value targets. Always generated unless explicitly disabled.
+                if (!opts.NoGraph)
+                {
+                    Console.WriteLine("[*] Building lateral movement graph...");
+                    var graphBuilder = new PathGraphBuilder(config);
+                    var graph        = graphBuilder.Build(report.Findings, opts.Hosts, opts.Domain);
+                    var graphRenderer = new Reports.GraphRenderer();
+
+                    graphRenderer.WriteHtml(graph,
+                        Path.Combine(opts.OutputDir, $"lateral-graph-{stamp}.html"));
+                    graphRenderer.WriteJson(graph,
+                        Path.Combine(opts.OutputDir, $"lateral-graph-{stamp}.json"));
+
+                    Console.WriteLine($"[+] Graph: {graph.Nodes.Count} nodes, " +
+                        $"{graph.Edges.Count} edges, {graph.CriticalPaths.Count} attack path(s)");
+
+                    var topPaths = graph.CriticalPaths
+                        .Where(p => p.RiskScore >= 8.0).ToList();
+                    if (topPaths.Count > 0)
+                    {
+                        Console.WriteLine($"\n[!] {topPaths.Count} CRITICAL attack path(s) found:");
+                        foreach (var p in topPaths.Take(5))
+                            Console.WriteLine($"    [{p.RiskScore:F1}] {p.Summary}");
+                    }
+                }
+
                 Console.WriteLine($"\n[+] Reports written to: {Path.GetFullPath(opts.OutputDir)}");
                 return 0;
             }
@@ -106,7 +134,8 @@ namespace ZeroTrustAuditor
             string    Domain,
             string    OutputDir,
             string?   ConfigPath,
-            string[]  SkipModules);
+            string[]  SkipModules,
+            bool      NoGraph);
 
         static Options? ParseArgs(string[] args)
         {
@@ -116,6 +145,7 @@ namespace ZeroTrustAuditor
             string  outputDir    = "./reports";
             string? configPath   = null;
             string? skipModules  = null;
+            bool    noGraph      = false;
 
             // Fix: use args.Length (not args.Length - 1) so the last flag is never skipped.
             // Each value flag consumes args[i] (the flag) and args[++i] (the value),
@@ -136,6 +166,8 @@ namespace ZeroTrustAuditor
                         if (i + 1 < args.Length) configPath  = args[++i]; break;
                     case "--skip-modules":
                         if (i + 1 < args.Length) skipModules = args[++i]; break;
+                    case "--no-graph":
+                        noGraph = true; break;
                 }
             }
 
@@ -151,7 +183,8 @@ namespace ZeroTrustAuditor
                     "  --skip-modules AdAuditor,ShareAuditor\n" +
                     "             Comma-separated list of modules to skip.\n" +
                     "             Valid names: AdAuditor, ProtocolProbe,\n" +
-                    "             LateralPathAnalyzer, ShareAuditor, SegmentationChecker");
+                    "             LateralPathAnalyzer, ShareAuditor, SegmentationChecker\n" +
+                    "  --no-graph Skip lateral movement graph generation");
                 return null;
             }
 
@@ -208,7 +241,7 @@ namespace ZeroTrustAuditor
                     StringSplitOptions.RemoveEmptyEntries |
                     StringSplitOptions.TrimEntries);
 
-            return new Options(hosts, domain, outputDir, configPath, skipList);
+            return new Options(hosts, domain, outputDir, configPath, skipList, noGraph);
         }
 
         static void PrintBanner()
