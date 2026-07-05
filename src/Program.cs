@@ -29,6 +29,12 @@ namespace ZeroTrustAuditor
         {
             PrintBanner();
 
+            if (args.Any(a => a is "--help" or "-h" or "-?" or "/?"))
+            {
+                PrintUsage();
+                return 0;
+            }
+
             var opts = ParseArgs(args);
             if (opts == null) return 1;
 
@@ -121,10 +127,58 @@ namespace ZeroTrustAuditor
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"\n[!] Fatal error: {ex.Message}");
-                Console.Error.WriteLine(ex.StackTrace);
+                PrintFriendlyError(ex);
                 return 3;
             }
+        }
+
+        // ── Error reporting ───────────────────────────────────────────────────
+
+        static void PrintFriendlyError(Exception ex)
+        {
+            Console.Error.WriteLine($"\n[!] Fatal error: {ex.Message}");
+
+            string? hint = ex switch
+            {
+                System.DirectoryServices.DirectoryServicesCOMException =>
+                    "Active Directory / LDAP error -- verify the domain name is correct and this " +
+                    "workstation is domain-joined or has line-of-sight to a Domain Controller.",
+                System.Net.Sockets.SocketException =>
+                    "Network error -- check that the hostname resolves and is reachable " +
+                    "(try: nltest /dsgetdc:<domain> or ping <host>).",
+                UnauthorizedAccessException =>
+                    "Access denied -- verify the account running this tool has the required " +
+                    "read permissions (see README > Permissions required).",
+                System.ComponentModel.Win32Exception =>
+                    "A Windows API call failed -- this is often a permissions or connectivity " +
+                    "issue on the target host.",
+                _ => null
+            };
+
+            if (hint != null)
+                Console.Error.WriteLine($"    Hint: {hint}");
+
+            if (Environment.GetEnvironmentVariable("ZTA_DEBUG") == "1")
+                Console.Error.WriteLine(ex.StackTrace);
+            else
+                Console.Error.WriteLine("    (Set environment variable ZTA_DEBUG=1 to see the full stack trace.)");
+        }
+
+        static void PrintUsage()
+        {
+            Console.WriteLine(
+                "\nUsage:\n" +
+                "  ZeroTrustAuditor.exe --hosts h1,h2 --domain corp.local\n" +
+                "  ZeroTrustAuditor.exe --hosts-file targets.txt --domain corp.local\n" +
+                "\nOptional flags:\n" +
+                "  --output   ./reports          Output directory (default: ./reports)\n" +
+                "  --config   audit-config.json  Config file path\n" +
+                "  --skip-modules AdAuditor,ShareAuditor\n" +
+                "             Comma-separated list of modules to skip.\n" +
+                "             Valid names: AdAuditor, ProtocolProbe,\n" +
+                "             LateralPathAnalyzer, ShareAuditor, SegmentationChecker\n" +
+                "  --no-graph Skip lateral movement graph generation\n" +
+                "  --help, -h Show this help text");
         }
 
         // ── Arg parsing ───────────────────────────────────────────────────────
@@ -173,18 +227,8 @@ namespace ZeroTrustAuditor
 
             if (domain == null)
             {
-                Console.Error.WriteLine(
-                    "\nUsage:\n" +
-                    "  ZeroTrustAuditor.exe --hosts h1,h2 --domain corp.local\n" +
-                    "  ZeroTrustAuditor.exe --hosts-file targets.txt --domain corp.local\n" +
-                    "\nOptional flags:\n" +
-                    "  --output   ./reports          Output directory (default: ./reports)\n" +
-                    "  --config   audit-config.json  Config file path\n" +
-                    "  --skip-modules AdAuditor,ShareAuditor\n" +
-                    "             Comma-separated list of modules to skip.\n" +
-                    "             Valid names: AdAuditor, ProtocolProbe,\n" +
-                    "             LateralPathAnalyzer, ShareAuditor, SegmentationChecker\n" +
-                    "  --no-graph Skip lateral movement graph generation");
+                Console.Error.WriteLine("[!] Missing required flag: --domain");
+                PrintUsage();
                 return null;
             }
 

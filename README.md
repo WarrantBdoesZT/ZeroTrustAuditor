@@ -223,10 +223,12 @@ The tool is designed to run as a **regular domain user**. No Domain Admin, no lo
 | Module | What it needs | If missing |
 |---|---|---|
 | AdAuditor | Domain User (read-only LDAP) | Check skips with logged message |
-| ProtocolProbe | Remote Registry service running on targets | Registry reads return null — no finding emitted |
-| LateralPathAnalyzer | AccountManagement API access (port 445) | HOST_UNREACHABLE Informational finding |
-| ShareAuditor | Network read to UNC paths (`\\host\share`) | Share silently skipped |
-| SegmentationChecker | Network connectivity (TCP SYN only) | Port reported as closed |
+| ProtocolProbe | Remote Registry service running on targets | No registry-based finding for that host, plus a `REMOTE_REGISTRY_UNREACHABLE` Informational finding |
+| LateralPathAnalyzer | AccountManagement API access (port 445) | `HOST_UNREACHABLE` Informational finding |
+| ShareAuditor | Network read to UNC paths (`\\host\share`) | No share findings for that host, plus a `SMB_UNREACHABLE` Informational finding |
+| SegmentationChecker | Network connectivity (TCP SYN only) | Port reported as closed; registry-based sub-checks also get `REMOTE_REGISTRY_UNREACHABLE` |
+
+> **Why this matters:** every module above used to fail *silently* when it couldn't read a host — a locked-down host and a genuinely clean host looked identical in the report. Before launching the five audit modules, the orchestrator now runs a lightweight reachability pre-check against SMB (445) and the Remote Registry on every host, and emits an Informational finding for any host it couldn't reach either way. **A finding-free host is only a clean host if you don't also see a `REMOTE_REGISTRY_UNREACHABLE` or `SMB_UNREACHABLE` entry for it.**
 
 > **Best practice:** Create a dedicated read-only service account (e.g. `CORP\svc-auditor`) and run the tool under that account. Never run as Domain Admin — it produces false negatives on checks like local admin group membership.
 
@@ -299,6 +301,10 @@ WS01
 | `--output ./reports` | Output directory for reports (default: `./reports`) |
 | `--config audit-config.json` | Path to config file (default: `audit-config.json` next to exe) |
 | `--skip-modules A,B` | Skip specific modules: `AdAuditor`, `ProtocolProbe`, `LateralPathAnalyzer`, `ShareAuditor`, `SegmentationChecker` |
+| `--no-graph` | Skip lateral movement graph generation |
+| `--help`, `-h` | Show usage and exit |
+
+Set the environment variable `ZTA_DEBUG=1` to print full stack traces on fatal errors (off by default -- normal runs print a plain-English message and a hint instead).
 
 ---
 
@@ -328,9 +334,11 @@ Enable additional formats in `audit-config.json`:
 ## Reading the HTML report
 
 1. **Open the file in any browser** — it is fully self-contained, no internet required.
-2. **Check the severity dashboard first** — if Critical is non-zero, go straight to those findings before anything else.
+2. **Check the severity dashboard first** — if Critical is non-zero, go straight to those findings before anything else. Click a card to filter the table to just that severity; click it again to clear the filter.
 3. **Findings are ordered by risk score**, highest first. Findings with a score above their base severity (e.g. a High sitting at 9.0 instead of 7.0) had a correlation rule fire — these represent complete attack chains and should be treated as Critical.
-4. **Group by CheckName before remediating.** If `SMB_SIGNING_DISABLED` appears on 30 hosts, that is a Group Policy problem — one GPO change fixes all 30. Fixing them one by one wastes time and misses new hosts.
+4. **Use the search box** to filter by host, check name, description, or evidence text as you type.
+5. **Check "Group by Check" before remediating.** If `SMB_SIGNING_DISABLED` appears on 30 hosts, that is a Group Policy problem — one GPO change fixes all 30. The grouping toggle clusters every finding by CheckName so you see the full blast radius at a glance instead of fixing them one host at a time.
+6. **Click any column header to sort** — click again to reverse the direction.
 
 ---
 

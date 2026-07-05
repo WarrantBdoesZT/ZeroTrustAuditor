@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using ZeroTrustAuditor.Checks;
@@ -34,6 +36,10 @@ namespace ZeroTrustAuditor
                     $"({_config.Audit.MaxHostsPerRun}). Narrow your scope or raise the limit.");
 
             Console.WriteLine($"[*] Starting audit -- {scopedHosts.Length} host(s), domain '{domain}'");
+
+            // Reachability pre-check: surfaces WHY a host produced no findings
+            // instead of letting registry/SMB access failures pass silently.
+            var reachabilityFindings = await CheckHostReachabilityAsync(scopedHosts);
 
             using var timeout = new CancellationTokenSource(
                 TimeSpan.FromSeconds(_config.Audit.ParallelModuleTimeoutSeconds));
@@ -81,7 +87,7 @@ namespace ZeroTrustAuditor
             }
 
             var results     = await Task.WhenAll(tasks);
-            var allFindings = results.SelectMany(r => r).ToList();
+            var allFindings = results.SelectMany(r => r).Concat(reachabilityFindings).ToList();
 
             Console.WriteLine($"[*] Raw findings: {allFindings.Count}");
 
@@ -97,15 +103,117 @@ namespace ZeroTrustAuditor
         private static async Task<List<Finding>> RunSafe(
             string name, Func<Task<List<Finding>>> fn, CancellationToken ct)
         {
+            var sw = Stopwatch.StartNew();
             try
             {
-                return await fn();
+                var result = await fn();
+                sw.Stop();
+                Console.WriteLine($"[✓] {name} complete: {result.Count} finding(s) ({sw.Elapsed.TotalSeconds:F1}s)");
+                return result;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[!] {name} failed: {ex.Message}");
+                sw.Stop();
+                Console.Error.WriteLine($"[!] {name} failed after {sw.Elapsed.TotalSeconds:F1}s: {ex.Message}");
                 return new List<Finding>();
             }
+        }
+
+        // ── Host reachability pre-check ────────────────────────────────────────
+        // Registry and SMB access failures are silent by design in the individual
+        // checks (a closed port or a locked-down host looks identical to "nothing
+        // to report"). This pass tells the user WHICH hosts couldn't be read from
+        // and WHY, so a clean report can be trusted instead of just assumed.
+
+        private async Task<List<Finding>> CheckHostReachabilityAsync(string[] hosts)
+        {
+            var smbPort = _config.Network.AdminPorts.TryGetValue("SMB", out var p) ? p : 445;
+            var timeoutMs = _config.Network.PortProbeTimeoutMs;
+
+            var probes = hosts.Select(async host =>
+            {
+                bool smbOpen = await IsTcpOpenAsync(host, smbPort, timeoutMs);
+                bool regOpen = IsRemoteRegistryOpen(host);
+                return (Host: host, SmbOpen: smbOpen, RegOpen: regOpen);
+            });
+
+            var results = await Task.WhenAll(probes);
+            var reachable = results.Count(r => r.SmbOpen || r.RegOpen);
+
+            Console.WriteLine($"[*] Host reachability: {reachable}/{hosts.Length} host(s) " +
+                "responded to SMB and/or Remote Registry");
+
+            var findings = new List<Finding>();
+
+            foreach (var r in results)
+            {
+                if (!r.RegOpen)
+                {
+                    Console.WriteLine($"    [!] {r.Host}: Remote Registry not accessible -- " +
+                        "ProtocolProbe and parts of SegmentationChecker will report nothing for this host.");
+                    findings.Add(new Finding
+                    {
+                        Host                = r.Host,
+                        Module              = "Orchestrator",
+                        CheckName           = "REMOTE_REGISTRY_UNREACHABLE",
+                        Severity            = Severity.Informational,
+                        Description         = $"Could not read the remote registry on '{r.Host}'. " +
+                            "ProtocolProbe (SMB signing, NTLMv1, RDP NLA, DCOM, WinRM) and the registry-based " +
+                            "checks in SegmentationChecker will silently report zero findings for this host -- " +
+                            "that does NOT mean the host is compliant, it means it could not be read.",
+                        Evidence            = "RegistryKey.OpenRemoteBaseKey failed or returned no accessible key.",
+                        RemediationGuidance = "Verify the Remote Registry service is running on the target " +
+                            "(GPO: Computer Configuration > Windows Settings > System Services > Remote Registry > " +
+                            "Automatic) and that the auditing account has network access to the host.",
+                    });
+                }
+
+                if (!r.SmbOpen)
+                {
+                    Console.WriteLine($"    [!] {r.Host}: SMB (445) unreachable -- " +
+                        "ShareAuditor and LateralPathAnalyzer will report nothing for this host.");
+                    findings.Add(new Finding
+                    {
+                        Host                = r.Host,
+                        Module              = "Orchestrator",
+                        CheckName           = "SMB_UNREACHABLE",
+                        Severity            = Severity.Informational,
+                        Description         = $"Could not reach '{r.Host}' on TCP port 445 (SMB). " +
+                            "ShareAuditor (SYSVOL/share ACLs) and LateralPathAnalyzer (local admin overlap, LAPS) " +
+                            "will silently report zero findings for this host -- that does NOT mean the host is " +
+                            "clean, it means it was unreachable.",
+                        Evidence            = $"TCP connect to {r.Host}:{smbPort} did not complete within {timeoutMs}ms.",
+                        RemediationGuidance = "Verify network connectivity and that a firewall between the audit " +
+                            "workstation and this host is not blocking port 445.",
+                    });
+                }
+            }
+
+            return findings;
+        }
+
+        private static async Task<bool> IsTcpOpenAsync(string host, int port, int timeoutMs)
+        {
+            try
+            {
+                using var client = new TcpClient();
+                var connectTask = client.ConnectAsync(host, port);
+                var timeoutTask = Task.Delay(timeoutMs);
+                var completed   = await Task.WhenAny(connectTask, timeoutTask);
+                return completed == connectTask && client.Connected;
+            }
+            catch { return false; }
+        }
+
+        private static bool IsRemoteRegistryOpen(string host)
+        {
+            try
+            {
+                using var reg = Microsoft.Win32.RegistryKey.OpenRemoteBaseKey(
+                    Microsoft.Win32.RegistryHive.LocalMachine, host, Microsoft.Win32.RegistryView.Registry64);
+                return reg != null;
+            }
+            catch { return false; }
         }
 
         private AuditReport Aggregate(List<Finding> all, string[] hosts, string domain)
